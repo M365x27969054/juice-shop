@@ -15,7 +15,7 @@ jobs:
     name: Deploy Development Infrastructure
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - # "Note: the 'AZURE_CLIENT_ID' and 'AZURE_TENANT_ID' secret is required to be added into GitHub Secrets. See this blog post for details: https://samlearnsazure.blog/2019/12/13/github-actions/"
       name: Azure Login
       uses: azure/login@v2
@@ -43,7 +43,7 @@ jobs:
     needs: [DeployDevInfrastructure_Stage_DeployInfrastructure]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - # "Note: the 'AZURE_CLIENT_ID' and 'AZURE_TENANT_ID' secret is required to be added into GitHub Secrets. See this blog post for details: https://samlearnsazure.blog/2019/12/13/github-actions/"
       name: Azure Login
       uses: azure/login@v2
