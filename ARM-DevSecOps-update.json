@@ -1,6 +1,7 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
+
   "parameters": {
     "location": {
       "type": "string",
@@ -19,11 +20,11 @@
       "defaultValue": "[subscription().tenantId]"
     }
   },
+
   "variables": {
-    "acaEnvName": "[format('aca-env-{0}', resourceGroup().tags.LabInstance)]",
-    "juiceShopName": "[format('juiceshop-aca-{0}', resourceGroup().tags.LabInstance)]",
-    "sonarqubeName": "[format('sonarqube-aca-{0}', resourceGroup().tags.LabInstance)]",
-    "depTrackName": "[format('dependency-track-aca-{0}', resourceGroup().tags.LabInstance)]",
+    "juiceShopContainerGroup": "[format('juiceshop-aci-{0}', resourceGroup().tags.LabInstance)]",
+    "sonarqubeContainerGroup": "[format('sonarqube-aci-{0}', resourceGroup().tags.LabInstance)]",
+    "depTrackContainerGroup": "[format('dependency-track-aci-{0}', resourceGroup().tags.LabInstance)]",
     "sqlServerName": "[format('sql-devsecops-{0}', resourceGroup().tags.LabInstance)]"
   },
 
@@ -50,122 +51,154 @@
     },
 
     {
-      "type": "Microsoft.Web/kubeEnvironments",
-      "apiVersion": "2023-05-01",
-      "name": "[variables('acaEnvName')]",
+      "type": "Microsoft.ContainerInstance/containerGroups",
+      "apiVersion": "2021-10-01",
+      "name": "[variables('juiceShopContainerGroup')]",
       "location": "[parameters('location')]",
-      "properties": { "type": "Managed" }
-    },
-
-    {
-      "type": "Microsoft.Web/containerApps",
-      "apiVersion": "2023-05-01",
-      "name": "[variables('juiceShopName')]",
-      "location": "[parameters('location')]",
-      "identity": { "type": "SystemAssigned" },
       "properties": {
-        "environmentId": "[resourceId('Microsoft.Web/kubeEnvironments', variables('acaEnvName'))]",
-        "configuration": {
-          "ingress": {
-            "external": true,
-            "targetPort": 3000
-          },
-          "registries": [
-            {
-              "server": "[concat(parameters('acrName'), '.azurecr.io')]",
-              "identity": "system"
-            }
-          ]
-        },
-        "template": {
-          "containers": [
-            {
-              "name": "juiceshop",
+        "sku": "Standard",
+        "osType": "Linux",
+        "restartPolicy": "Always",
+        "containers": [
+          {
+            "name": "juiceshop",
+            "properties": {
               "image": "[concat(parameters('acrName'), '.azurecr.io/juiceshopgit:1')]",
+              "ports": [
+                {
+                  "protocol": "TCP",
+                  "port": 3000
+                }
+              ],
+              "environmentVariables": [],
               "resources": {
-                "cpu": 1,
-                "memory": "2Gi"
+                "requests": {
+                  "cpu": 1,
+                  "memoryInGB": 2
+                }
               }
+            }
+          }
+        ],
+        "imageRegistryCredentials": [
+          {
+            "server": "[concat(parameters('acrName'), '.azurecr.io')]",
+            "username": "[listCredentials(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), '2021-12-01-preview').username]",
+            "password": "[listCredentials(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), '2021-12-01-preview').passwords[0].value]"
+          }
+        ],
+        "ipAddress": {
+          "type": "Public",
+          "dnsNameLabel": "[variables('juiceShopContainerGroup')]",
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 3000
             }
           ]
         }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName'))]",
-        "[resourceId('Microsoft.Web/kubeEnvironments', variables('acaEnvName'))]"
+        "[resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName'))]"
       ]
     },
 
     {
-      "type": "Microsoft.Web/containerApps",
-      "apiVersion": "2023-05-01",
-      "name": "[variables('sonarqubeName')]",
+      "type": "Microsoft.ContainerInstance/containerGroups",
+      "apiVersion": "2021-10-01",
+      "name": "[variables('sonarqubeContainerGroup')]",
       "location": "[parameters('location')]",
-      "identity": { "type": "SystemAssigned" },
       "properties": {
-        "environmentId": "[resourceId('Microsoft.Web/kubeEnvironments', variables('acaEnvName'))]",
-        "configuration": {
-          "ingress": {
-            "external": true,
-            "targetPort": 9000
-          }
-        },
-        "template": {
-          "containers": [
-            {
-              "name": "sonarqube",
+        "sku": "Standard",
+        "osType": "Linux",
+        "restartPolicy": "Always",
+        "containers": [
+          {
+            "name": "sonarqube",
+            "properties": {
               "image": "sonarqube:latest",
+              "ports": [
+                {
+                  "protocol": "TCP",
+                  "port": 9000
+                }
+              ],
+              "environmentVariables": [],
               "resources": {
-                "cpu": 2,
-                "memory": "4Gi"
+                "requests": {
+                  "cpu": 2,
+                  "memoryInGB": 4
+                }
               }
+            }
+          }
+        ],
+        "ipAddress": {
+          "type": "Public",
+          "dnsNameLabel": "[variables('sonarqubeContainerGroup')]",
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 9000
             }
           ]
         }
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.Web/kubeEnvironments', variables('acaEnvName'))]"
-      ]
+      }
     },
 
     {
-      "type": "Microsoft.Web/containerApps",
-      "apiVersion": "2023-05-01",
-      "name": "[variables('depTrackName')]",
+      "type": "Microsoft.ContainerInstance/containerGroups",
+      "apiVersion": "2021-10-01",
+      "name": "[variables('depTrackContainerGroup')]",
       "location": "[parameters('location')]",
-      "identity": { "type": "SystemAssigned" },
       "properties": {
-        "environmentId": "[resourceId('Microsoft.Web/kubeEnvironments', variables('acaEnvName'))]",
-        "configuration": {
-          "ingress": {
-            "external": true,
-            "targetPort": 8080
-          }
-        },
-        "template": {
-          "containers": [
-            {
-              "name": "dtrack-frontend",
+        "sku": "Standard",
+        "osType": "Linux",
+        "restartPolicy": "Always",
+        "containers": [
+          {
+            "name": "dtrack-frontend",
+            "properties": {
               "image": "dependencytrack/frontend:latest",
+              "ports": [
+                {
+                  "protocol": "TCP",
+                  "port": 8080
+                }
+              ],
               "resources": {
-                "cpu": 1,
-                "memory": "2Gi"
+                "requests": {
+                  "cpu": 1,
+                  "memoryInGB": 2
+                }
               }
-            },
-            {
-              "name": "dtrack-backend",
+            }
+          },
+          {
+            "name": "dtrack-backend",
+            "properties": {
               "image": "dependencytrack/apiserver:latest",
+              "ports": [],
               "resources": {
-                "cpu": 1,
-                "memory": "2Gi"
+                "requests": {
+                  "cpu": 1,
+                  "memoryInGB": 2
+                }
               }
+            }
+          }
+        ],
+        "ipAddress": {
+          "type": "Public",
+          "dnsNameLabel": "[variables('depTrackContainerGroup')]",
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 8080
             }
           ]
         }
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.Web/kubeEnvironments', variables('acaEnvName'))]"
-      ]
+      }
     },
 
     {
