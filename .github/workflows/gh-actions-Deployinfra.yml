@@ -42,7 +42,7 @@ jobs:
           az deployment group create \
             --resource-group my-rg \
             --name deployinfradev \
-            --template-file ./infra/ARM-DevSecOps.json
+            --template-file ARM-DevSecOps-update.json
         azcliversion: latest
 
   DeployProdInfrastructure_Stage_DeployInfrastructure:
