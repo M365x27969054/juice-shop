@@ -37,7 +37,12 @@ jobs:
 
     - uses: azure/cli@v1.0.0
       with:
-        inlineScript: az deployment group create --resource-group ${{ secrets.DEVRESOURCEGROUP }} --name deployinfradev --template-file ARM-DevSecOps.json
+        inlineScript: |
+          ls -R .
+          az deployment group create \
+            --resource-group my-rg \
+            --name deployinfradev \
+            --template-file ./infra/ARM-DevSecOps.json
         azcliversion: latest
 
   DeployProdInfrastructure_Stage_DeployInfrastructure:
