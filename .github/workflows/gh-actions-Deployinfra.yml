@@ -40,7 +40,7 @@ jobs:
         inlineScript: |
           ls -R .
           az deployment group create \
-            --resource-group my-rg \
+            --resource-group ${{ secrets.DEVRESOURCEGROUP }} \
             --name deployinfradev \
             --template-file ARM-DevSecOps-update.json
         azcliversion: latest
